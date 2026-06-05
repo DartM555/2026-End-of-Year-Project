@@ -52,13 +52,14 @@ def load_high_score():
     if os.path.exists(HS_FILE):
         with open(HS_FILE, "r") as f:
             return json.load(f)
-        return []
+    return []
 
 # Saving the high score
 def save_high_score(score):
     scores = load_high_score()
     scores.append(score)
-    scores.sorted(scores, reverse=True)[:5]
+    scores.sort(reverse=True)
+    scores = scores[:5]
     with open(HS_FILE, "w") as f:
         json.dump(scores, f)
     return scores
@@ -71,7 +72,7 @@ def draw_text(font, text, color, x, y, center=True):
         rect.center = (x,y)
     else:
         rect.topleft = (x,y)
-    screen.bilt(surf, rect)
+    screen.blit(surf, rect)
     
 # function for background gradient
 def bg():
@@ -82,7 +83,7 @@ def bg():
             int(SKY[1]+(SKY2[1]-SKY[1])* t),
             int(SKY[2]+(SKY2[2]-SKY[2])* t) 
            )
-    pygame.draw.line(screen, c, (0,y), (width, y))
+        pygame.draw.line(screen, c, (0,y), (width, y))
      
 # function for the ground   
 def ground():
@@ -98,3 +99,23 @@ class Shop:
     def __init__(self):
         self.owned = {item["key"]: False for item in shop_items}
         self.time = {item["key"]: 0 for item in shop_items}
+
+
+def buy(self, key, cost, coins):
+    if cost >= cost:
+        self.owned[key] = True
+    return coins
+
+def use(self, key):
+    if not self.owned[key]:
+        return 
+    self.owned[key] = False
+    if key == "slowmo":
+        self.time[key] == FPS * 5
+    elif key == "double_pts":
+        self.time[key] = fps * 10
+        
+
+
+
+
