@@ -88,3 +88,13 @@ def bg():
 def ground():
     pygame.draw.rect(screen, dark_green, (0, ground_height, width, height-ground_height))
     pygame.draw.line(screen, green, (0, ground_height), (width, ground_height), 3)
+
+# function for stars in the background
+def stars(stars_list):
+    for x,y in stars_list:
+        pygame.draw.circle(screen, white, (x,y), 2)
+
+class Shop:
+    def __init__(self):
+        self.owned = {item["key"]: False for item in shop_items}
+        self.time = {item["key"]: 0 for item in shop_items}
