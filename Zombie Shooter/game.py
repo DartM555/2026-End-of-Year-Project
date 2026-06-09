@@ -370,3 +370,33 @@ def draw_game_over(score, highscores, star_list):
             center=False,
         )
     draw_text(font_medium, "ENTER - Restart    ESC - Menu", green, width // 2, height - 70)
+   
+    def draw_highscores(highscores, star_list):
+        bg()
+        stars(star_list)
+        draw_text(font_large, "HIGH SCORES", yellow, width // 2, 80)
+
+        if not highscores:
+            draw_text(font_medium, "No scores yet!", white, width // 2, 240)
+        else:
+            for i, s in enumerate(highscores[:5]):
+                draw_text(font_small, f"  {i + 1}.     {s} pts", white, width // 2 - 120,170 + i * 52, center=False,  )
+
+    draw_text(font_small, "ESC - Back", green, width // 2, height - 50)
+
+def draw_shop_screen(shop, coins, star_list):
+    bg()
+    stars(star_list)
+    draw_text(font_large, "SHOP", orange, width // 2, 40)
+    draw_text(font_medium, f"Coins: {coins}", yellow, width // 2, 108)
+    for i, item in enumerate(SHOP_ITEMS):
+        x, y = 60, 170 + i * 90
+        owned = shop.owned[item["key"]]
+        active = shop.on(item["key"])
+
+        if owned:
+            bg_col = (50, 100, 50)
+        elif active:
+            bg_col = (80, 40, 120)
+        else:
+            bg_col = (20, 50, 100)
