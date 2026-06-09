@@ -141,14 +141,14 @@ class Player:
     
     def __init__(self,shop):
         self.shop = shop
-        self.rect = pygame.Rect(width//2 - self.W // 2, ground_height - self.h, self.w, self.h)
+        self.rect = pygame.Rect(width//2 - self.w // 2, ground_height - self.h, self.w, self.h)
         self.shield = False
         self.flash = 0   #
 
     def speed(self):
         # Calculates the current movement speed, adding adjustments if Speed Boost is bought.
         speed = self.base
-        if self.show.owned.get("speed_boost"):
+        if self.shop.owned.get("speed_boost"):
             spd = int(spd * 1.25)
         return spd
             
@@ -162,7 +162,211 @@ class Player:
         if self.flash > 0:
             self.flash -= 1     
             
-    def draw(self, surf):
+    def draw(self, surf):  
+        # base body
         body = red if self.flash > 0 else neon
-        pygame.draw.rect(surf, body, (self.rect.x +4, self.rect.y + 20, self.w -8, self.h - 20),
-                         border_radius=8)
+        pygame.draw.rect(surf, body, (self.rect.x + 4, self.rect.y + 20, self.w - 8, self.h - 20), border_radius=8)
+
+        # Head (Fixed typo from eclipse to ellipse, fixed coordinates and variables)
+        pygame.draw.ellipse(surf, (240, 195, 145), (self.rect.x + 4, self.rect.y, self.w - 8, 22))
+        
+        # Eyes (Fixed period to comma, and fixed circle spelling)
+        pygame.draw.circle(surf, black, (self.rect.x + 11, self.rect.y + 8), 3)
+        pygame.draw.circle(surf, black, (self.rect.x + self.w - 11, self.rect.y + 8), 3)
+        
+        # Left and Right Feet (Fixed capitalized W and H variables)
+        pygame.draw.rect(surf, (40, 60, 140), (self.rect.x + 4, self.rect.y + self.h - 12, 12, 12), border_radius=3)
+        pygame.draw.rect(surf, (40, 60, 140), (self.rect.x + self.w - 16, self.rect.y + self.h - 12, 12, 12), border_radius=3)
+        
+        # Shield Bubble (if active - fixed capitalized W and H variables)
+        if self.shield:
+            pygame.draw.ellipse(surf, (100, 200, 255), (self.rect.x - 4, self.rect.y - 4, self.w + 8, self.h + 8), 3)
+            
+            
+class Zombie:
+    """Represents zombie enemies that can spawn falling from the sky
+    or walking horizontally across the ground zone.
+    """
+
+    w = 32
+    h = 46
+
+    def __init__(self, speed, horizontal=False):
+        self.horizontal = horizontal
+        self.color = random.choice([(100, 180, 80), (80, 160, 60), (60, 140, 40)])
+
+        if horizontal:
+            # Configure ground-walking zombie coming from left or right margins
+            side = random.choice(["left", "right"])
+            y = random.randint(int(ground_height - self.h - 80), int(ground_height - self.h))
+            if side == "left":
+                self.rect = pygame.Rect(-self.w, y, self.w, self.h)
+                self.vx = abs(speed)
+            else:
+                self.rect = pygame.Rect(width, y, self.w, self.h)
+                self.vx = -abs(speed)
+            self.vy = 0
+        else:
+            # Configure falling sky zombie
+            x = random.randint(0, width - self.w)
+            self.rect = pygame.Rect(x, -self.h, self.w, self.h)
+            self.vy = speed
+            self.vx = random.uniform(-1, 1)
+
+    def update(self, slowmo=False):
+        """Moves zombie positions. Cuts speed in half if Slow-Mo powerup is active."""
+        f = 0.5 if slowmo else 1.0
+        self.rect.x += int(self.vx * f)
+        self.rect.y += int(self.vy * f)
+
+    def off(self):
+        """Checks if the zombie has completely moved off-screen boundaries."""
+        if self.horizontal:
+            return self.rect.right < 0 or self.rect.left > width
+        return self.rect.top > height
+
+    def draw(self, surf):
+        """Draws the zombie sprite with green colors, glowing red eyes, and extended arms."""
+        c = self.color
+        # Torso & Head
+        pygame.draw.rect(
+            surf,
+            c,
+            (self.rect.x + 4, self.rect.y + 18, self.w - 8, self.h - 18),
+            border_radius=4,
+        )
+        pygame.draw.ellipse(
+            surf, c, (self.rect.x + 4, self.rect.y, self.w - 8, 20)
+        )
+        # Red eyes
+        pygame.draw.circle(surf, red, (self.rect.x + 9, self.rect.y + 6), 3)
+        pygame.draw.circle(
+            surf, red, (self.rect.x + self.w - 9, self.rect.y + 6), 3
+        )
+        # Zombie arms stretched out forward
+        pygame.draw.line(
+            surf,
+            c,
+            (self.rect.x, self.rect.y + 24),
+            (self.rect.x - 8, self.rect.y + 30),
+            3,
+        )
+        pygame.draw.line(
+            surf,
+            c,
+            (self.rect.right, self.rect.y + 24),
+            (self.rect.right + 8, self.rect.y + 30),
+            3,
+        )
+        # Feet
+        pygame.draw.rect(
+            surf,
+            (40, 90, 30),
+            (self.rect.x + 4, self.rect.bottom - 12, 10, 12),
+            border_radius=2,
+        )
+        pygame.draw.rect(
+            surf,
+            (40, 90, 30),
+            (self.rect.right - 14, self.rect.bottom - 12, 10, 12),
+            border_radius=2,
+        )
+
+class Rock:
+    """Represents hazard rocks that drop straight down from the sky."""
+
+    def __init__(self, speed):
+        self.w = random.randint(28, 50)
+        self.h = random.randint(22, 40)
+        self.rect = pygame.Rect(
+            random.randint(0, width - self.w), -self.h, self.w, self.h
+        )
+        self.speed = speed
+
+    def update(self, slowmo=False):
+        """Drops the rock down. Affected by Slow-Mo state."""
+        self.rect.y += int(self.speed * 0.5 if slowmo else self.speed)
+
+    def off(self):
+        """Returns True if the rock falls below screen limits."""
+        return self.rect.top > height
+
+    def draw(self, surf):
+        """Draws a custom geometric gray rock polygon shape."""
+        p = [
+            (self.rect.x + self.w // 3, self.rect.y),
+            (self.rect.right, self.rect.y + self.h // 3),
+            (self.rect.right - 6, self.rect.bottom),
+            (self.rect.x + 6, self.rect.bottom),
+            (self.rect.x, self.rect.y + self.h // 2),
+        ]
+        pygame.draw.polygon(surf, light_gray, p)
+        pygame.draw.polygon(surf, white, p, 2)
+
+
+class Particle:
+    """Represents visual burst particles generated when the player loses a life."""
+
+    def __init__(self, x, y, color):
+        self.x = x + random.randint(-10, 10)
+        self.y = y + random.randint(-10, 10)
+        self.vx = random.uniform(-3, 3)
+        self.vy = random.uniform(-4, -1)  # Burst upwards initially
+        self.life = random.randint(20, 40)  # Total frame lifespan
+        self.color = color
+        self.size = random.randint(3, 7)
+
+    def update(self):
+        """Updates particle position physics, applying a gravity-like down pull."""
+        self.x += self.vx
+        self.y += self.vy
+        self.vy += 0.2  # Gravity acceleration effect
+        self.life -= 1
+
+    def draw(self, surf):
+        """Draws individual circular particles."""
+        pygame.draw.circle(
+            surf, self.color, (int(self.x), int(self.y)), self.size
+        )
+
+
+# --- RENDER SCENE UI FUNCTIONS ---
+
+
+def draw_menu(star_list):
+    """Renders the main menu interface with titles, credits, and navigation options."""
+    bg()
+    stars(star_list)
+    ground()
+    draw_text(font_large, "DODGE  OR  DIE", neon, width // 2, 100)
+    draw_text(font_small, "by William Mejia & Joshua Dada", light_gray, width // 2, 168)
+
+    items = [
+        ("ENTER     - Start game", white),
+        ("H         - High scores", yellow),
+        ("S         - Shop", orange),
+        ("ESC       - Quit", light_gray),
+    ]
+    for i, (txt, col) in enumerate(items):
+        draw_text(font_medium, txt, col, width // 2, 260 + i * 50)
+    draw_text(font_xsmall, "Use arrow keys or A / D to move", light_gray, width // 2, height - 30)
+
+
+def draw_game_over(score, highscores, star_list):
+    """Renders the Game Over screen presenting final stats and local top scores leaderboards."""
+    bg()
+    stars(star_list)
+    draw_text(font_large, "GAME  OVER", red, width // 2, 90)
+    draw_text(font_medium, f"Score: {score}", yellow, width // 2, 170)
+    draw_text(font_medium, "Top Scores", orange, width // 2, 230)
+
+    for i, s in enumerate(highscores[:5]):
+        draw_text(
+            font_small,
+            f"  {i + 1}.  {s}",
+            white,
+            width // 2 - 80,
+            270 + i * 34,
+            center=False,
+        )
+    draw_text(font_medium, "ENTER - Restart    ESC - Menu", green, width // 2, height - 70)
